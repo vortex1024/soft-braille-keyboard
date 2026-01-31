@@ -347,6 +347,13 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
     @Override
     public String handleTypedCharacter(byte dots) {
         if (brailleParser != null) {
+            // Check if we are in number mode (sequence contains number sign 60)
+            // and the user typed Dot 6 (32), which should act as a capital sign
+            // and break the number mode.
+            if (dots == 32 && cells.contains((byte) 60)) {
+                finishComposingText(true);
+            }
+
             String oldText = composingText.toString();
             setCells(dots);
             String text = brailleParser.backTranslate(this,
