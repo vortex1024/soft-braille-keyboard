@@ -20,7 +20,7 @@
 
 ### 4. Bug Fixes
 - **Chrome Address Bar Duplication:** Fixed an issue where the first character typed in the Google Chrome address bar (and potentially other fields) would be duplicated. This was caused by `deleteSurroundingText(0, 0)` being called unnecessarily when `composingText` was empty; added a check to skip deletion in this case.
-- **Number Mode Exit:** Fixed an issue where typing Dot 6 (Capital Sign) while in Number Mode (after 3456) would fail to switch to Capital Mode and continue writing numbers. Added logic to detect Dot 6 input when the buffer contains a Number Sign, forcing a text commit to reset the state.
+- **Number Mode Exit:** Fixed an issue where typing Dot 6 (Capital Sign) while in Number Mode (after 3456) would fail to switch to Capital Mode and continue writing numbers. Added logic to detect Dot 6 input when the buffer contains a Number Sign, forcing a text commit to reset the state. **Update:** This fix is restricted to the **English locale** ("en") to avoid interfering with other languages where Dot 6 might have different meanings (e.g., as a punctuation mark in French or Spanish number modes).
 
 ## Technical Notes for Future Sessions
 - **Emoji Data:** If new languages are added to `arrays.xml`, run `python scripts/fetch_emojis.py` after adding the lang code to the script's `LANGUAGES` list.
