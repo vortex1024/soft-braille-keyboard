@@ -350,7 +350,13 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
             // Check if we are in number mode (sequence contains number sign 60)
             // and the user typed Dot 6 (32), which should act as a capital sign
             // and break the number mode.
-            if (dots == 32 && cells.contains((byte) 60)) {
+            // This behavior is specific to English (and potentially others where Dot 6 is Capital).
+            // For other languages, the Capital sign might be different (e.g., dots 4-6),
+            // or Dot 6 might have a different meaning in number mode.
+            Locale locale = getLocale();
+            boolean isEnglish = locale != null && locale.getLanguage().equals(Locale.ENGLISH.getLanguage());
+
+            if (isEnglish && dots == 32 && cells.contains((byte) 60)) {
                 finishComposingText(true);
             }
 
