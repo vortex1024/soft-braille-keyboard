@@ -187,24 +187,28 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
     @Override
     public ExtractedText getAllText() {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return null;
         return ic.getExtractedText(new ExtractedTextRequest(), 0);
     }
 
     @Override
     public CharSequence getTextBeforeCursor(int n) {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return null;
         return ic.getTextBeforeCursor(n, 0);
     }
 
     @Override
     public CharSequence getTextAfterCursor(int n) {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return null;
         return ic.getTextAfterCursor(n, 0);
     }
 
     @Override
     public CharSequence getSelectedText(int flags) {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return null;
         return ic.getSelectedText(flags);
     }
 
@@ -237,12 +241,14 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
     @Override
     public boolean performContextMenuAction(int id) {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return false;
         return ic.performContextMenuAction(id);
     }
 
     @Override
     public boolean deleteSurroundingText(int before, int after) {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return false;
         selectAll = false;
         return ic.deleteSurroundingText(before, after);
     }
@@ -250,11 +256,13 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
     @Override
     public boolean deleteSelection() {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return false;
         int cursor = 0;
         if (!selectAll) {
             cursor = getCursor();
         }
         int[] positions = getSelectionBoundaries(cursor);
+        if (positions == null) return false;
         setSelection(positions[1], positions[1]);
         return ic.deleteSurroundingText(positions[1] - positions[0], 0);
     }
@@ -384,6 +392,8 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
         }
 
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return text.toString();
+
         if (selectAll) {
             toggleMark();
             selectAll = false;
@@ -395,29 +405,36 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
         // according to auto-capitalisation rules.
         text = capitalise(text);
 
-        if (predictionOn) {
-            // we can use composing text capabilities of android to make life
-            // easy and efficient here.
-            composingText.setLength(0);
-            composingText.append(text);
-            ic.setComposingText(composingText.toString(),
-                    composingText.length());
-        } else if (text.length() > 0) {
-            // We have something to write to the field.
-            // The IME could do strange things with our input here.
-            // First clear our last text translation from n-1 Braille cells.
-            ic.deleteSurroundingText(composingText.length(), 0);
-            composingText.setLength(0);
-            composingText.append(text);
+        ic.beginBatchEdit();
+        try {
+            if (predictionOn) {
+                // we can use composing text capabilities of android to make life
+                // easy and efficient here.
+                composingText.setLength(0);
+                composingText.append(text);
+                ic.setComposingText(composingText.toString(),
+                        composingText.length());
+            } else if (text.length() > 0) {
+                // We have something to write to the field.
+                // The IME could do strange things with our input here.
+                // First clear our last text translation from n-1 Braille cells.
+                if (composingText.length() > 0) {
+                    ic.deleteSurroundingText(composingText.length(), 0);
+                }
+                composingText.setLength(0);
+                composingText.append(text);
 
-            // Now write the text corresponding to n Braille cells.
-            // We must write individual characters so that the input field
-            // doesn't misbehave.
-            // This is the case for some fields that do validation like banking
-            // apps for security and auto-completing fields.
-            for (int i = 0; i < text.length(); i++) {
-                ic.commitText(text.subSequence(i, i + 1), 1);
+                // Now write the text corresponding to n Braille cells.
+                // We must write individual characters so that the input field
+                // doesn't misbehave.
+                // This is the case for some fields that do validation like banking
+                // apps for security and auto-completing fields.
+                for (int i = 0; i < text.length(); i++) {
+                    ic.commitText(text.subSequence(i, i + 1), 1);
+                }
             }
+        } finally {
+            ic.endBatchEdit();
         }
 
         // return the new text we wrote if any.
@@ -446,6 +463,7 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
     @Override
     public void onKey(int keyCode) {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return;
         // disable selection
         if (selectAll) {
             toggleMark();
@@ -474,12 +492,14 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
      * Helper to send a key down / key up pair to the current editor.
      */
     private void keyDownUp(InputConnection ic, int keyEventCode) {
+        if (ic == null) return;
         ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyEventCode));
         ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyEventCode));
     }
 
     private boolean setSelection(int start, int end) {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return false;
         finishComposingText();
         return ic.setSelection(start, end);
     }
@@ -487,7 +507,7 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
     private int[] getSelectionBoundaries(int cursor) {
         int[] array = null;
         ExtractedText text = getAllText();
-        if (text != null) {
+        if (text != null && text.text != null) {
             mark = mark > text.text.length() ? text.text.length() : mark;
             array = new int[2];
             array[0] = Math.min(cursor, mark);
@@ -504,6 +524,11 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
 
     private void finishComposingText(boolean commit) {
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) {
+            composingText.setLength(0);
+            cells.clear();
+            return;
+        }
         if (composingText.length() > 0) {
             if (predictionOn && commit) {
                 ic.commitText(composingText, 1);
@@ -544,9 +569,9 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
     private void updateShiftState() {
         caps = 0;
         EditorInfo editorInfo = getCurrentInputEditorInfo();
-        if (editorInfo != null && editorInfo.inputType != InputType.TYPE_NULL) {
-            caps = getCurrentInputConnection().getCursorCapsMode(
-                    editorInfo.inputType);
+        InputConnection ic = getCurrentInputConnection();
+        if (editorInfo != null && editorInfo.inputType != InputType.TYPE_NULL && ic != null) {
+            caps = ic.getCursorCapsMode(editorInfo.inputType);
         }
     }
 
@@ -554,6 +579,7 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
     public void commitText(String text, int newCursorPosition) {
         finishComposingText();
         InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return;
         if (selectAll) {
             toggleMark();
             selectAll = false;
@@ -561,5 +587,22 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
         updateShiftState();
         text = capitalise(text.subSequence(0, text.length())).toString();
         ic.commitText(text, newCursorPosition);
+    }
+
+    @Override
+    public void closeKeyboard() {
+        requestHideSelf(0);
+    }
+
+    @Override
+    public String translateOnly(byte dots) {
+        if (brailleParser != null) {
+            List<Byte> localCells = new ArrayList<Byte>();
+            localCells.add((byte) 0); // initial state
+            localCells.add(dots);
+            return brailleParser.backTranslate(this,
+                    localCells.toArray(new Byte[localCells.size()]));
+        }
+        return null;
     }
 }
