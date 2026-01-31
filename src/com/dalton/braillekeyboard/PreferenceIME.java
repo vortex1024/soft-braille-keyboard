@@ -66,6 +66,9 @@ public class PreferenceIME extends PreferenceActivity {
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                getPreferenceManager().setStorageDeviceProtected();
+            }
             // Load the preferences from an XML resource
             addPreferencesFromResource(R.xml.ime_preferences);
             ListPreference keyboardEcho = (ListPreference) findPreference(getString(R.string.pref_echo_feedback_key));

@@ -106,9 +106,9 @@ public class MainActivity extends Activity {
     private void updateUIStates() {
         InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         List<InputMethodInfo> list = inputManager.getEnabledInputMethodList();
-        Button btnEnable = (Button) findViewById(R.string.btn_id_enable);
-        Button btnDefaultKeyboard = (Button) findViewById(R.string.btn_id_default_keyboard);
-        EditText text = (EditText) findViewById(R.string.txt_id_practice);
+        Button btnEnable = (Button) findViewById(R.id.btn_enable);
+        Button btnDefaultKeyboard = (Button) findViewById(R.id.btn_default_keyboard);
+        EditText text = (EditText) findViewById(R.id.txt_practice);
         btnEnable.setEnabled(true);
         btnDefaultKeyboard.setEnabled(false);
         text.setVisibility(View.INVISIBLE);

@@ -116,12 +116,29 @@
          android:title="@string/pref_echo_misspellings_title"
          android:summary="@string/pref_echo_misspellings_summary"
          android:defaultValue="@string/pref_echo_misspellings_default" />
+         <CheckBoxPreference
+         android:key="@string/pref_use_wav_key"
+         android:title="@string/pref_use_wav_title"
+         android:summary="@string/pref_use_wav_summary"
+         android:defaultValue="@string/pref_use_wav_default" />
+         <CheckBoxPreference
+         android:key="@string/pref_use_accessibility_volume_key"
+         android:title="@string/pref_use_accessibility_volume_title"
+         android:summary="@string/pref_use_accessibility_volume_summary"
+         android:defaultValue="@string/pref_use_accessibility_volume_default" />
          </PreferenceScreen>
          <PreferenceScreen
              android:title="@string/pref_text_to_speech_title" >
          <ListPreference
              android:key="@string/pref_text_to_speech_engine_key"
              android:title="@string/pref_text_to_speech_engine_title" />
+         <ListPreference
+             android:key="@string/pref_speech_rate_key"
+             android:title="@string/pref_speech_rate_title"
+             android:summary="@string/pref_speech_rate_summary"
+             android:entries="@array/speech_rate_entries"
+             android:entryValues="@array/speech_rate_values"
+             android:defaultValue="@string/pref_speech_rate_default" />
          </PreferenceScreen>
          <PreferenceScreen
          android:key="@string/pref_category_misc_key"

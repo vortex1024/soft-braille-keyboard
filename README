@@ -20,79 +20,89 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 BUILDING THE APP
 
-You can checkout sbk as follows:
-git clone git@bitbucket.org:daniel_dalton10/soft-braille-keyboard.git
+The project has been migrated to Gradle and supports building with modern Android development tools.
 
-To build the app you will need a few things. 
-* Checkout Android Brailleback
-git clone http://github.com/google/brailleback
-* See brailleback/README for setup instructions. Follow these and make
-sure you can at least ant build the service and client packages
-each. Don't worry if brailleback isn't building we do not use this.
-Note: The liblouis and brltty patches wouldn't apply for me in the
-brailleback project. Solution was to manually enter the path to each
-file for each patch when applying.
-* Update the soft braille keyboard project.properties to use the right
-target and point to the required libraries:
-cd /path/to/soft-braille-keyboard
-android update project -p ./ --target <target_id> --library /path/to/brailleback/braille/service/
-android update project -p ./ --target <target_id> --library /path/to/brailleback/braille/client/
-* ant debug
-* If this all goes fine you should do the following:
-  - Checkout latest liblouis somewhere else and copy the pl-pl-comp8.ctb
-  file into the
-  brailleback/braille/service/jni/liblouiswrapper/liblouis/tables/
-  directory.
-  - Copy *.utb *.ctb to this same directory from sbk/patches:
-  cd /path/to/sbk_checkout
-  cp patches/*.utb /path/to/brailleback/braille/service/jni/liblouiswrapper/liblouis/tables/
-  cp patches/*.ctb /path/to/brailleback/braille/service/jni/liblouiswrapper/liblouis/tables/
-  cd /path/to/brailleback/braille/service/jni/liblouiswrapper/liblouis/
-  patch -p 0 < /path/to/sbk/patches/tablechanges.patch
-  cd /path/to/brailleback
-  patch -p 0 < /path/to/sbk/patches/tablelist-brailleback.patch
-    Update the TranslatorClient:
-    patch -p 1 < /path/to/soft-braille-keyboard/patches/TranslatorClient.patch
-  And finally update the Braille service to use the newly included
-  tables. If you make any changes to the liblouis tables or add
-  additional tables you should do this last step:
-  cd braille/service
-  ./tables/mktranslationtables
+Prerequisites:
+*   **JDK 21:** The build is configured to use Java 21 (e.g., OpenJDK 21 or Android Studio JBR).
+*   **Android SDK & NDK:** Ensure you have the Android SDK installed.
+    *   **Important:** If your user path contains spaces (e.g., `C:\Users\AMAIS 10`), you MUST use the short path (8.3 format, e.g., `C:\Users\AMAIS1~1`) in your `local.properties` file for the `sdk.dir` property. This prevents build failures in the NDK components (liblouis/brltty).
 
-If this all works fine it is time to configure eclipse:
-1. Open eclipse. 
-2. File -> import -> existing android code 
-3. Browse and import the service package. 
-4. Select just the service package and finish.
-5. File -> import -> existing android code 
-6. Browse and import the client package. 
-7. Select just the client package and
-finish. 
-8. File -> import -> existing android code 
-9. Browse to the Soft braille keyboard package and import it. 
-10. Click finish. 
-11. The projects should now build right click on the sbk project and
-select run as -. android application 
+Setup:
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd Soft-Braille-Keyboard
+    ```
+
+2.  **Configure SDK Location:**
+    Create a `local.properties` file in the root directory if it doesn't exist (it is automatically created if you open the project in Android Studio).
+    Example content for Windows (using forward slashes):
+    ```properties
+    sdk.dir=C:/Users/YOURUS~1/AppData/Local/Android/Sdk
+    ```
+
+Build Commands:
+
+*   **Debug Build:**
+    To build the debug APK:
+    ```bash
+    .\gradlew.bat assembleDebug
+    ```
+    The APK will be located at: `build/outputs/apk/debug/Soft-Braille-Keyboard-debug.apk`
+
+*   **Release Build:**
+    To build the unsigned release APK:
+    ```bash
+    .\gradlew.bat assembleRelease
+    ```
+    The APK will be located at: `build/outputs/apk/release/Soft-Braille-Keyboard-release-unsigned.apk`
+
+*   **Clean:**
+    To clean the build artifacts:
+    ```bash
+    .\gradlew.bat clean
+    ```
+
+WAV FEEDBACK FEATURE
+
+This app includes a high-performance audio feedback system that uses pre-generated WAV files instead of the system TTS engine for single character echoes. This significantly reduces latency.
+
+*   **Activation:** Go to Keyboard Settings -> Keyboard Feedback -> Enable "Use WAV feedback".
+*   **Mechanism:** When enabled, the app checks the `assets/sounds/` directory for a WAV file matching the typed character. If found, it plays via `SoundPool`; otherwise, it falls back to standard TTS.
+
+ADDING SUPPORT FOR OTHER LANGUAGES
+
+To add sounds for a new language (e.g., Russian, French):
+
+1.  **Generate the WAV files:**
+    *   Modify `scripts/generate_audio.py`.
+    *   Update `VOICE_ARGS` to include the language flag (e.g., `-vru` for Russian).
+    *   Update the `CHARS` dictionary with the characters and their pronunciation in the target language.
+    *   Run the script: `python scripts/generate_audio.py`.
+
+2.  **Update the Android logic:**
+    *   The mapping between a character and a filename is handled in `src/com/dalton/braillekeyboard/Speech.java` in the `getSoundFilename(String text)` method.
+    *   If the new language uses special characters (e.g., 'ñ', 'ч'), you must add them to the `switch` statement in that method to return the corresponding filename.
+
+3.  **Filenames:**
+    *   Lower case letters: `a.wav`, `b.wav`...
+    *   Upper case letters: `a_cap.wav`, `b_cap.wav`... (The code automatically appends `_cap` for uppercase letters).
+    *   Symbols: Use descriptive names (e.g., `dot.wav`, `comma.wav`).
+
+Project Structure:
+The project is a multi-module Gradle project:
+*   `:` (Root) - The main application module (Soft Braille Keyboard).
+*   `:client` - The BrailleBack client library (`brailleback/braille/client`).
+*   `:service` - The BrailleBack service library (`brailleback/braille/service`).
 
 ADDING A BRAILLE TABLE
 
 - add the new table in the
-brailleback/braille/service/jni/liblouiswrapper/liblouis/tables/
-directory.
+  brailleback/braille/service/jni/liblouiswrapper/liblouis/tables/
+  directory.
 - Update brailleback/braille/service/res/xml/tables.xml.
 - Run brailleback/braille/service/tables/mktranslationtables from the
-brailleback/braille/service dir.
-- Update sbk/res/values/arrays.xml to also include the id of the newly
-defined table you created for the braille service.
-- Clean build everything in eclipse or whatever and test.
-- create the diffs:
-  + cd /path/to/brailleback
-  git diff braille/service/res/xml/tablelist.xml >/path/to/sbk/patches/tablelist-brailleback.patch
-  + Copy the new table into the patches dir for now, so others can use
-  it or otherwise get it included in liblouis and update the readme to
-  include this like the pl-comp8 table.
-- If you modify an existing table
-  + run mktranslationtables as described.
-  + Create the tablelist.xml diff as above if you changed that file. 
-  + cd /path/to/brailleback/braille/service/jni/liblouiswrapper/liblouis/
-  + git diff tables/ >/path/to/sbk/patches/tablechanges.patch
+  brailleback/braille/service dir.
+- Update res/values/arrays.xml to also include the id of the newly
+  defined table you created for the braille service.
+- Clean build everything and test.

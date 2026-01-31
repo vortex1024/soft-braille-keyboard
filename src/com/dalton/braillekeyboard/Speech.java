@@ -16,14 +16,18 @@
 
 package com.dalton.braillekeyboard;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.AudioManager.OnAudioFocusChangeListener;
+import android.media.SoundPool;
 import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
@@ -60,8 +64,12 @@ public class Speech {
     private static final String SHUTDOWN_ID = "SHUTDOWN";
     private static TextToSpeech tts;
 
+    private SoundPool soundPool;
+    private final Map<String, Integer> soundIdMap = new HashMap<String, Integer>();
     private final AudioManager audioManager;
     private final Map<String, String> speechMap = new HashMap<String, String>();
+    private final boolean useAccessibilityVolume;
+    private final float speechRate;
     @SuppressLint("NewApi")
     private final UtteranceProgressListener progressListener = new UtteranceProgressListener() {
 
@@ -111,6 +119,44 @@ public class Speech {
     public Speech(final Context context, final OnReadyListener listener) {
         audioManager = (AudioManager) context
                 .getSystemService(Context.AUDIO_SERVICE);
+
+        useAccessibilityVolume = Options.getBooleanPreference(context,
+                R.string.pref_use_accessibility_volume_key, false);
+
+        String rateString = Options.getStringPreference(context,
+                R.string.pref_speech_rate_key, context.getString(R.string.pref_speech_rate_default));
+        float rate = 1.0f;
+        try {
+            int rateValue = Integer.parseInt(rateString);
+            if (rateValue <= 50) {
+                // Map 0-50 to 0.1-1.0
+                rate = 0.1f + (rateValue / 50.0f) * 0.9f;
+            } else {
+                // Map 50-100 to 1.0-8.0
+                rate = 1.0f + ((rateValue - 50) / 50.0f) * 7.0f;
+            }
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
+        speechRate = rate;
+
+        // Init SoundPool
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            int usage = useAccessibilityVolume ? AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY
+                    : AudioAttributes.USAGE_MEDIA;
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setUsage(usage)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build();
+            soundPool = new SoundPool.Builder()
+                    .setMaxStreams(5)
+                    .setAudioAttributes(audioAttributes)
+                    .build();
+        } else {
+            soundPool = new SoundPool(5, AudioManager.STREAM_MUSIC, 0);
+        }
+        loadSounds(context);
+
         // Some symbols are not spoken natively by TTS engines, so add them into
         // the map from strings.xml
         setSpeechMap(context, speechMap);
@@ -126,6 +172,16 @@ public class Speech {
             @Override
             public void onInit(int status) {
                 if (status == TextToSpeech.SUCCESS) {
+                    tts.setSpeechRate(speechRate);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        int usage = useAccessibilityVolume ? AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY
+                                : AudioAttributes.USAGE_MEDIA;
+                        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                                .setUsage(usage)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .build();
+                        tts.setAudioAttributes(audioAttributes);
+                    }
                     canSpeak = true;
                     setProgressListener();
                     listener.ttsReady();
@@ -201,6 +257,13 @@ public class Speech {
     public void speak(Context context, String format, CharSequence text,
             int mode) {
         if (text != null) {
+            if (Options.getBooleanPreference(context, R.string.pref_use_wav_key, false)) {
+                String filename = getSoundFilename(text.toString());
+                if (filename != null && soundIdMap.containsKey(filename)) {
+                    soundPool.play(soundIdMap.get(filename), 1, 1, 0, 0, 1.0f);
+                    return;
+                }
+            }
             if (text.equals(" ")) {
                 // say "space
                 text = context.getString(R.string.space);
@@ -432,5 +495,78 @@ public class Speech {
                 context.getString(R.string.punctuation_left_brace));
         punctuationSpokenEquivalentsMap.put("}",
                 context.getString(R.string.punctuation_right_brace));
+    }
+
+    private void loadSounds(Context context) {
+        try {
+            String[] files = context.getAssets().list("sounds");
+            if (files != null) {
+                for (String file : files) {
+                    try {
+                        AssetFileDescriptor afd = context.getAssets().openFd("sounds/" + file);
+                        int soundId = soundPool.load(afd, 1);
+                        String key = file.replace(".wav", "");
+                        soundIdMap.put(key, soundId);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getSoundFilename(String text) {
+        if (text == null) return null;
+        if (text.length() == 1) {
+            char c = text.charAt(0);
+            if (Character.isLetter(c)) {
+                 if (Character.isUpperCase(c)) {
+                     return Character.toLowerCase(c) + "_cap";
+                 }
+                 return String.valueOf(c);
+            }
+            if (Character.isDigit(c)) {
+                return String.valueOf(c);
+            }
+            switch (c) {
+                case ' ': return "space";
+                case '\n': return "newline";
+                case '.': return "dot";
+                case ',': return "comma";
+                case '?': return "question";
+                case '!': return "exclamation";
+                case '(': return "open_paren";
+                case ')': return "close_paren";
+                case '"': return "double_quote";
+                case '\'': return "single_quote";
+                case '/': return "slash";
+                case '\\': return "backslash";
+                case ';': return "semicolon";
+                case ':': return "colon";
+                case '{': return "left_brace";
+                case '}': return "right_brace";
+                case '@': return "at";
+                case '#': return "hash";
+                case '$': return "dollar";
+                case '%': return "percent";
+                case '^': return "caret";
+                case '&': return "ampersand";
+                case '*': return "asterisk";
+                case '_': return "underscore";
+                case '+': return "plus";
+                case '-': return "minus";
+                case '=': return "equals";
+                case '<': return "less_than";
+                case '>': return "greater_than";
+                case '[': return "left_bracket";
+                case ']': return "right_bracket";
+                case '|': return "pipe";
+                case '~': return "tilde";
+                case '`': return "grave";
+            }
+        }
+        return null;
     }
 }

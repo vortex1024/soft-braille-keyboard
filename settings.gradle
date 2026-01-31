@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "Soft-Braille-Keyboard"
+include ':client'
+project(':client').projectDir = new File('brailleback/braille/client')
+include ':service'
+project(':service').projectDir = new File('brailleback/braille/service')

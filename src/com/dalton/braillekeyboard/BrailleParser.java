@@ -168,7 +168,7 @@ public class BrailleParser {
      */
     public BrailleParser(final Context context, BrailleParserListener listener) {
         this.listener = listener;
-        sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
+        sharedPref = Options.getSharedPreferences(context);
         String[] ids = context.getResources().getStringArray(
                 R.array.braille_tables);
         tableIds = Arrays.asList(ids);

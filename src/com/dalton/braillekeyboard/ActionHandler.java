@@ -17,6 +17,8 @@
 package com.dalton.braillekeyboard;
 
 import java.util.Locale;
+import java.util.List;
+import java.util.ArrayList;
 
 import android.Manifest;
 import android.content.ClipboardManager;
@@ -28,7 +30,9 @@ import android.support.v4.content.ContextCompat;
 import android.view.inputmethod.InputMethodManager;
 
 import com.dalton.braillekeyboard.EditingUtilities.Word;
+import com.dalton.braillekeyboard.EmojiDictionary.EmojiEntry;
 import com.dalton.braillekeyboard.Options.KeyboardEcho;
+
 import com.dalton.braillekeyboard.Options.KeyboardFeedback;
 import com.dalton.braillekeyboard.Pad.Swipe;
 import com.dalton.braillekeyboard.SpellChecker.SpellingSuggestionsReadyListener;
@@ -199,6 +203,7 @@ public class ActionHandler {
     private final InputMethodManager inputManager;
     private final SpellChecker spellChecker;
     private final VoiceInput voiceInput = new VoiceInput();
+    private final Context context;
 
     private EditAction editAction = EditAction.COPY;
     private long lastTouchTime = 0; // Time screen was last touched.
@@ -209,6 +214,11 @@ public class ActionHandler {
     private SpellChecker.Direction spellingDirection;
     private Suggestion spellingSuggestion;
 
+    private boolean emojiMode = false;
+    private StringBuilder emojiSearchQuery = new StringBuilder();
+    private List<EmojiEntry> emojiResults = new ArrayList<EmojiEntry>();
+    private int emojiIndex = 0;
+
     /**
      * Create a new ActionHandler for the given context.
      * 
@@ -216,6 +226,7 @@ public class ActionHandler {
      *            The application context.
      */
     public ActionHandler(Context context) {
+        this.context = context;
         inputManager = (InputMethodManager) context
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         clipboard = (ClipboardManager) context
@@ -316,14 +327,9 @@ public class ActionHandler {
             considerPassword = true;
             break;
         case TWO_DOWN:
-            KeyboardEcho echo = KeyboardEcho.valueOf(Integer.parseInt(Options
-                    .getStringPreference(context,
-                            R.string.pref_echo_feedback_key,
-                            KeyboardEcho.CHARACTER.getValue())));
-            echo = KeyboardEcho.next(echo);
-            Options.writeStringPreference(context,
-                    R.string.pref_echo_feedback_key, echo.getValue());
-            message = context.getString(echo.resource);
+        case TWO_FINGERS_DOWN:
+            message = context.getString(R.string.closing_keyboard);
+            listener.closeKeyboard();
             break;
         case THREE_LEFT:
             moveLeft(context, Granularity.LINE);
@@ -344,6 +350,16 @@ public class ActionHandler {
             }
             break;
         case FOUR_LEFT:
+            if (emojiMode) {
+                if (emojiSearchQuery.length() > 0) {
+                    emojiSearchQuery.setLength(emojiSearchQuery.length() - 1);
+                    updateEmojiResults();
+                    callback.onText("%s", getEmojiSummary(), false);
+                } else {
+                    callback.onText("%s", "Emoji search query empty", false);
+                }
+                break;
+            }
             backspace(context, Granularity.CHARACTER, fastDoubleSwipe);
             break;
         case FOUR_RIGHT:
@@ -392,12 +408,42 @@ public class ActionHandler {
             }
             break;
         case SIX_LEFT:
+            if (emojiMode) {
+                if (!emojiResults.isEmpty()) {
+                    emojiIndex = (emojiIndex - 1 + emojiResults.size()) % emojiResults.size();
+                    message = getEmojiSummary();
+                } else {
+                    message = "No emoji results";
+                }
+                break;
+            }
             backspace(context, Granularity.LINE, fastDoubleSwipe);
             break;
         case SIX_RIGHT:
+            if (emojiMode) {
+                if (!emojiResults.isEmpty()) {
+                    emojiIndex = (emojiIndex + 1) % emojiResults.size();
+                    message = getEmojiSummary();
+                } else {
+                    message = "No emoji results";
+                }
+                break;
+            }
             nextAction(context);
             break;
         case SIX_UP:
+            if (emojiMode) {
+                if (!emojiResults.isEmpty()) {
+                    EmojiEntry entry = emojiResults.get(emojiIndex);
+                    listener.commitText(entry.emoji, 1);
+                    String displayName = (entry.name != null && !entry.name.isEmpty()) ? entry.name : entry.keyword;
+                    message = "Inserted " + displayName;
+                    emojiMode = false;
+                } else {
+                    message = "No emoji to insert";
+                }
+                break;
+            }
             selectAction(context);
             break;
         case SIX_DOWN:
@@ -407,6 +453,29 @@ public class ActionHandler {
             } else {
                 message = context.getString(R.string.unknown_character);
             }
+            break;
+        case EMOJI_MODE:
+            emojiMode = !emojiMode;
+            if (emojiMode) {
+                emojiSearchQuery.setLength(0);
+                emojiResults.clear();
+                emojiIndex = 0;
+                Locale locale = listener.getLocale();
+                String langName = locale != null ? locale.getDisplayLanguage() : "English";
+                message = "Emoji search mode on (" + langName + ")";
+            } else {
+                message = "Emoji search mode off";
+            }
+            break;
+        case AUTOCAPS_TOGGLE:
+            Options.switchBooleanPreference(context,
+                    R.string.pref_auto_caps_key, Boolean.parseBoolean(context
+                            .getString(R.string.pref_auto_caps_default)));
+            message = Options.getBooleanPreference(context,
+                    R.string.pref_auto_caps_key, Boolean.parseBoolean(context
+                            .getString(R.string.pref_auto_caps_default))) ? context
+                    .getString(R.string.auto_caps_enabled) : context
+                    .getString(R.string.auto_caps_disabled);
             break;
         case HOLD_SIX_LEFT:
             moveLeft(context, Granularity.ALL);
@@ -463,14 +532,6 @@ public class ActionHandler {
             }
             break;
         case HOLD_ONE_UP:
-            Options.switchBooleanPreference(context,
-                    R.string.pref_auto_caps_key, Boolean.parseBoolean(context
-                            .getString(R.string.pref_auto_caps_default)));
-            message = Options.getBooleanPreference(context,
-                    R.string.pref_auto_caps_key, Boolean.parseBoolean(context
-                            .getString(R.string.pref_auto_caps_default))) ? context
-                    .getString(R.string.auto_caps_enabled) : context
-                    .getString(R.string.auto_caps_disabled);
             break;
         case HOLD_FOUR_LEFT:
             doSpellCheck(context, SpellChecker.Direction.LEFT, 0,
@@ -526,6 +587,19 @@ public class ActionHandler {
     public void handleCharacter(Context context, byte value) {
         // Can't type while voice input is in progress.
         if (voiceInput.isListening()) {
+            return;
+        }
+
+        if (emojiMode) {
+            String translated = listener.translateOnly(value);
+            if (translated != null && translated.length() > 0) {
+                emojiSearchQuery.append(translated);
+                updateEmojiResults();
+                callback.onNotify(true, true);
+                callback.onText("%s", getEmojiSummary(), false);
+            } else {
+                callback.onNotify(true, false);
+            }
             return;
         }
 
@@ -1071,5 +1145,19 @@ public class ActionHandler {
             }
         }
         return false;
+    }
+
+    private void updateEmojiResults() {
+        emojiResults = EmojiDictionary.search(context, emojiSearchQuery.toString(), listener.getLocale());
+        emojiIndex = 0;
+    }
+
+    private String getEmojiSummary() {
+        if (emojiResults.isEmpty()) {
+            return "No results for " + emojiSearchQuery.toString();
+        }
+        EmojiEntry entry = emojiResults.get(emojiIndex);
+        String displayName = (entry.name != null && !entry.name.isEmpty()) ? entry.name : entry.keyword;
+        return String.format("%s, %d of %d", displayName, emojiIndex + 1, emojiResults.size());
     }
 }

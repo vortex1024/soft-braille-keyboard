@@ -6,19 +6,19 @@
     android:paddingRight="0dp"
     android:orientation="vertical" >
     <Button style="@android:style/TextAppearance.Large"
-        android:id="@string/btn_id_enable"
+        android:id="@+id/btn_enable"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/button_keyboard_settings"
         android:onClick="onKeyboardSettings" />
     <Button style="@android:style/TextAppearance.Large" 
-        android:id="@string/btn_id_default_keyboard"
+        android:id="@+id/btn_default_keyboard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/button_choose_default_keyboard"
         android:onClick="onDefaultInputMethod" />
     <EditText
-        android:id="@string/txt_id_practice"
+        android:id="@+id/txt_practice"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:inputType="textCapSentences|textMultiLine"

@@ -254,4 +254,16 @@ public interface KeyboardListener {
     void commitText(String text, int newCursorPosition);
 
     void finishComposingText();
+
+    /**
+     * Close the keyboard.
+     */
+    void closeKeyboard();
+    
+    /**
+     * Translates the Braille dots to text without committing it to the input connection.
+     * @param dots The Braille dots.
+     * @return The translated text, or null if translation failed.
+     */
+    String translateOnly(byte dots);
 }

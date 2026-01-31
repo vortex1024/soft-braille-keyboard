@@ -21,6 +21,7 @@ app/build/
 service/build/
 client/build/
 brailleback/build/
+local-sdk/
 
 # Local configuration file (sdk path, etc)
 local.properties
