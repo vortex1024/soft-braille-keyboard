@@ -4,6 +4,8 @@
 
 This is an Android input method which displays a virtual on-screen Braille keyboard for use by a blind person. This facilitates much faster and more comfortable input for the blind on Android with a variety of powerful editing commands and support for a number of different languages.
 
+This project is a fork of the original work by **Daniel Dalton**. The original repository can be found here: [danieldalton10/Soft-Braille-Keyboard](https://github.com/danieldalton10/Soft-Braille-Keyboard).
+
 **Download the latest version:** [Latest Release](https://github.com/vortex1024/soft-braille-keyboard/releases/latest)
 
 For a detailed manual on how to use the keyboard, please see the [Keyboard Guide](https://goo.gl/lD1v49).
