@@ -25,5 +25,3 @@ out/
 third_party/
 braille/libraries/utils/LICENSE
 braille/libraries/utils/src/com/leff/
-braille/service/jni/brlttywrapper/brltty/
-braille/service/jni/liblouiswrapper/liblouis/
