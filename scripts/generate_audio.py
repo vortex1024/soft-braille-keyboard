@@ -24,7 +24,7 @@ else:
         sys.exit(1)
 
 OUTPUT_DIR = os.path.join("assets", "sounds")
-VOICE_ARGS = ["-vro+edward2", "-s", "450"]
+VOICE_ARGS = ["-ven", "-s", "450"]
 
 # Character map: filename -> text to speak
 CHARS = {
