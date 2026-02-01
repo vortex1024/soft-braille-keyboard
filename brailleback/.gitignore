@@ -1,0 +1,24 @@
+# Gradle files
+.gradle/
+**/build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Generated files
+bin/
+gen/
+out/
+
+# Dependencies
+third_party/
+braille/libraries/utils/LICENSE
+braille/libraries/utils/src/com/leff/
+braille/service/jni/brlttywrapper/brltty/
+braille/service/jni/liblouiswrapper/liblouis/
