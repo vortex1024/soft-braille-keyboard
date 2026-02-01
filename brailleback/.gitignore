@@ -1,6 +1,11 @@
 # Gradle files
 .gradle/
-**/build/
+build/
+**/braille/client/build/
+**/braille/service/build/
+**/braille/libraries/utils/build/
+**/braille/brailleback/build/
+!braille/service/jni/brlttywrapper/build/
 
 # Local configuration file (sdk path, etc)
 local.properties
