@@ -4,11 +4,9 @@
 
 This is an Android input method which displays a virtual on-screen Braille keyboard for use by a blind person. This facilitates much faster and more comfortable input for the blind on Android with a variety of powerful editing commands and support for a number of different languages.
 
-**Download the latest version:** [Latest Release](https://github.com/vortex1024/soft-braille-keyboard/releases)
+**Download the latest version:** [Latest Release](https://github.com/vortex1024/soft-braille-keyboard/releases/latest)
 
-Repository: [https://github.com/vortex1024/soft-braille-keyboard](https://github.com/vortex1024/soft-braille-keyboard)
-
-Please see [https://goo.gl/lD1v49](https://goo.gl/lD1v49) for more historical details on the project.
+For a detailed manual on how to use the keyboard, please see the [Keyboard Guide](https://goo.gl/lD1v49).
 
 This application is licensed under the Apache License, Version 2.0.
 
@@ -34,7 +32,6 @@ The keyboard now features a locale-aware emoji search mode.
 
 ### Improved Typing Logic
 - **Number Mode Exit:** Typing a **Capital Sign (Dot 6)** while in Number Mode will now automatically switch the keyboard to Capital Mode and commit the current number, streamlining transitions between numbers and text (currently optimized for English).
-- **Auto-capitalization Toggle:** Can be toggled quickly by holding **Dot 1** and performing a **Swipe Down with Dot 4**.
 
 ### Bug Fixes
 - **Chrome Address Bar:** Fixed a critical bug where the first character typed in the Google Chrome address bar (and other fields) would be duplicated.
