@@ -22,6 +22,5 @@ gen/
 out/
 
 # Dependencies
-third_party/
 braille/libraries/utils/LICENSE
 braille/libraries/utils/src/com/leff/
