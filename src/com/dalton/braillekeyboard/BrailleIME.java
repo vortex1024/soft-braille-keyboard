@@ -107,30 +107,10 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
         selectAll = false;
         mark = -1;
 
+        // Disable prediction (composing text) by default.
+        // Our manual differential update logic in compose() is much more robust
+        // and prevents duplication bugs in apps that don't handle composing spans correctly.
         predictionOn = false;
-        // We are now going to initialize our state based on the type of
-        // text being edited.
-        switch (info.inputType & InputType.TYPE_MASK_CLASS) {
-        case InputType.TYPE_CLASS_TEXT:
-            predictionOn = true;
-            // We now look for a few special variations of text that will
-            // modify our behavior.
-            int variation = info.inputType & InputType.TYPE_MASK_VARIATION;
-            if (variation == InputType.TYPE_TEXT_VARIATION_PASSWORD
-                    || variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                    || variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
-                    || variation == InputType.TYPE_TEXT_VARIATION_URI) {
-                // Do not display predictions / what the user is typing
-                // when they are entering a password or uri.
-                predictionOn = false;
-            }
-
-            if ((info.inputType & InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE) != 0) {
-                predictionOn = false;
-            }
-            break;
-        default:
-        }
     }
 
     @Override
@@ -428,23 +408,42 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
                 ic.setComposingText(composingText.toString(),
                         composingText.length());
             } else if (text.length() > 0) {
-                // We have something to write to the field.
-                // The IME could do strange things with our input here.
-                // First clear our last text translation from n-1 Braille cells.
-                if (composingText.length() > 0) {
-                    ic.deleteSurroundingText(composingText.length(), 0);
+                // Differential update: Compare old (composingText) vs new (text).
+                String prev = composingText.toString();
+                String curr = text.toString();
+
+                // Re-sync mechanism: If composingText is empty/out-of-sync but the editor
+                // already contains the prefix of what we are about to write, trust the editor.
+                CharSequence beforeCursor = ic.getTextBeforeCursor(curr.length(), 0);
+                if (beforeCursor != null && beforeCursor.length() > 0 && curr.startsWith(beforeCursor.toString())) {
+                    // The editor already has the prefix! Use that as 'prev' to avoid duplicating it.
+                    prev = beforeCursor.toString();
                 }
+
+                int commonLen = 0;
+                while (commonLen < prev.length() && commonLen < curr.length()
+                        && prev.charAt(commonLen) == curr.charAt(commonLen)) {
+                    commonLen++;
+                }
+
+                // 1. Delete mismatching tail of previous text
+                int deleteCount = prev.length() - commonLen;
+                if (deleteCount > 0) {
+                    for (int i = 0; i < deleteCount; i++) {
+                        keyDownUp(ic, KeyEvent.KEYCODE_DEL);
+                    }
+                }
+
+                // 2. Append new text (the suffix)
+                if (commonLen < curr.length()) {
+                    CharSequence appendText = curr.subSequence(commonLen, curr.length());
+                    for (int i = 0; i < appendText.length(); i++) {
+                        ic.commitText(appendText.subSequence(i, i + 1), 1);
+                    }
+                }
+
                 composingText.setLength(0);
                 composingText.append(text);
-
-                // Now write the text corresponding to n Braille cells.
-                // We must write individual characters so that the input field
-                // doesn't misbehave.
-                // This is the case for some fields that do validation like banking
-                // apps for security and auto-completing fields.
-                for (int i = 0; i < text.length(); i++) {
-                    ic.commitText(text.subSequence(i, i + 1), 1);
-                }
             }
         } finally {
             ic.endBatchEdit();
@@ -485,7 +484,7 @@ public class BrailleIME extends InputMethodService implements KeyboardListener {
         finishComposingText();
         switch (keyCode) {
         case Keyboard.KEYCODE_DELETE:
-            ic.deleteSurroundingText(1, 0);
+            keyDownUp(ic, KeyEvent.KEYCODE_DEL);
             break;
         case Keyboard.KEYCODE_DONE:
         case '\n':

@@ -26,3 +26,20 @@
 - **Emoji Data:** If new languages are added to `arrays.xml`, run `python scripts/fetch_emojis.py` after adding the lang code to the script's `LANGUAGES` list.
 - **Direct Boot:** All new preference access must go through `Options.getSharedPreferences(context)` to maintain compatibility with the device-protected storage used on Android 7.0+.
 - **Build Command:** Use `.\gradlew.bat assembleDebug` for testing. Ensure `local.properties` remains in the short-path format.
+
+# Gemini CLI Session Summary - February 2, 2026
+
+## Accomplishments
+
+### 1. Bug Fixes
+- **Character Duplication in Star Taxi:** Implemented a robust fix for character duplication in apps that handle input poorly (Star Taxi, Chrome address bar).
+    - **Previous Reference Commit:** `6ffb3c1bcf064e2a3487032d1020b95f378b4ea9` (Last state with legacy composition logic).
+    - **Root Cause:** The keyboard was using Android's "composing text" feature (`setComposingText`). Many apps do not handle composition spans correctly and append the entire composing buffer to the existing text on every update, instead of replacing it.
+    - **Final Solution:**
+        1. **Disabled system-level prediction/composition** globally in `BrailleIME.java`.
+        2. **Manual Differential Update + Re-sync:** The keyboard now manually calculates the difference between what's in the editor (`getTextBeforeCursor`) and what it needs to write.
+        3. **Append-Only Behavior:** For standard typing, the keyboard now only calls `commitText` for the single new character. It avoids delete/replace commands unless necessary.
+    - **Result:** Completely eliminates duplication in problematic apps by mimicking standard physical keyboard behavior.
+
+## Technical Notes
+- **Input Compatibility:** Avoiding `setComposingText` and `deleteSurroundingText` for standard appends maximizes compatibility with non-standard Android UI frameworks.

@@ -1,28 +1,15 @@
-# Project Status - January 22, 2026
+# Gemini CLI Session Summary - February 2, 2026
 
-## Summary
-The project has been migrated from Ant to Gradle to support building with modern tools and the Android Studio JDK.
+## Accomplishments
 
-## Build Configuration
-- **JDK:** Using Android Studio JBR (OpenJDK 21).
-- **Gradle Version:** 8.5
-- **Android Gradle Plugin:** 8.2.0
-- **SDK Path:** Configured in `local.properties` using 8.3 short paths (`C:/Users/AMAIS1~1/...`) to avoid NDK build failures caused by spaces in the "AMAIS 10" directory name.
+### 1. Bug Fixes
+- **Character Duplication in Star Taxi:** Fixed a persistent character duplication issue.
+    - **Final Root Cause Identified:** The keyboard was using Android's "composing text" feature (`setComposingText`). Many apps (Star Taxi, Chrome address bar) do not handle composition spans correctly and append the entire composing buffer to the existing text on every update, instead of replacing it. This lead to the "a", "aac", "aacace" pattern.
+    - **Final Solution:**
+        1. **Disabled system-level prediction/composition** globally in `BrailleIME.java`.
+        2. **Standardized on "Manual Differential Update"**: The keyboard now manually calculates the difference between what's in the editor and what it needs to write.
+        3. **Append-Only Behavior**: For standard typing, the keyboard now only calls `commitText` for the single new character. It **never** uses delete or replace commands unless a contraction or backspace truly changes the previous text.
+    - **Result:** The keyboard now behaves like a standard physical keyboard, adding letters one-by-one. This is the most compatible method for Android and completely eliminates duplication in problematic apps.
 
-## Applied Changes & Fixes
-1.  **Gradle Migration:** Created root `build.gradle`, `settings.gradle`, `gradle.properties`, and `local.properties`.
-2.  **Module Configuration:**
-    *   Updated `brailleback/braille/client/build.gradle` and `brailleback/braille/service/build.gradle`.
-    *   Enabled **AIDL** support in the `client` module to resolve missing interface errors.
-    *   Enabled **BuildConfig** generation in the `service` module.
-3.  **Manifest Fixes:**
-    *   Resolved merger conflicts for `android:icon` and `android:label` using `tools:replace`.
-    *   Added `android:exported="true"` to all activities and services with intent filters to comply with Android 12+ requirements.
-4.  **Code Patches:**
-    *   Applied `TranslatorClient.patch` to make internal fields/classes accessible to `MyTranslatorClient`.
-    *   Applied `tablelist-brailleback.patch` and `tablechanges.patch` to the braille service and liblouis tables.
-
-## Current State
-- Build environment is set up.
-- All required patches are applied.
-- Next step: Run `.\gradlew.bat assembleDebug` to verify the full build.
+## Technical Notes
+- **Robustness:** By avoiding `setComposingText` and `deleteSurroundingText` for standard appends, we maximize compatibility with non-standard Android UI frameworks.
