@@ -56,10 +56,10 @@ sign \\ 12567
 sign % 146
 sign * 16
 sign # 3456
-punctuation ` 4
+punctuation ` 47
 sign _ 456
 sign ^ 457
-sign @ 47
+sign @ 4
 math = 123456
 math < 126
 math / 34
