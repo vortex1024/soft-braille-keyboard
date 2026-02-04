@@ -16,7 +16,18 @@ This application is licensed under the Apache License, Version 2.0.
 
 ## What's New
 
-### Emoji Support
+### What's New in Version 4.01
+*   **New & Updated Braille Tables:**
+    *   Added **Romanian Literary Braille** support (Grade 1).
+    *   Improved **Italian Literary Braille** table (fixed Dot 1 mapping and encoding issues).
+*   **Gesture Fixes & Updates:**
+    *   **Restored Classic Toggle:** Re-enabled the **Dot 2 swipe down** gesture to toggle Keyboard Echo (Speech), fixing a regression from the previous version.
+    *   **New "Close Keyboard" Gesture:** Mapped to **Dots 4 and 6 swiping Right** for a more reliable way to dismiss the IME.
+*   **Automation & Accessibility for Developers:**
+    *   **GitHub Actions Integration:** Added a cloud build system that triggers on every commit. This allows anyone to **fork the project and make changes directly on GitHub** (e.g., adding tables or editing code) without needing to install Android Studio or the SDK locally—the APK will be built automatically in the "Actions" tab.
+
+### What's New in Version 4.0
+#### Emoji Support
 The keyboard now features a locale-aware emoji search mode.
 - **Toggle Emoji Mode:** Hold **Dot 1** and perform a **Swipe Down with Dot 5**.
 - **Search:** Type the name of the emoji using Braille. The search is incremental.
