@@ -399,6 +399,12 @@
          locale="ro"
          dots="8"
          fileName="ro.ctb" />
+    <table
+         id="ro-g0"
+         locale="ro"
+         dots="6"
+         grade="1"
+         fileName="ro2.ctb" />
 
     <!-- Russian -->
     <table

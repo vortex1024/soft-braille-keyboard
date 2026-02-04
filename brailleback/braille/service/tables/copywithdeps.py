@@ -53,7 +53,7 @@ def main():
       dryrun = True
     if opt in ("-X", "--exclude"):
       excluded.append(val)
-  if len(args) < 3:
+  if len(args) < 2:
     Usage("too few arguments")
   destdir = args[-1]
   if not os.path.isdir(destdir):
@@ -61,6 +61,9 @@ def main():
 
   tocopy = set()
   for filename in args[:-1]:
+    if not os.path.exists(filename):
+      print("Warning: Skipping non-existent file:", filename)
+      continue
     if MatchesAny(os.path.basename(filename), excluded):
       print("Skipping:", filename)
       continue
@@ -96,9 +99,13 @@ def GetDeps(filename, assigns=None):
   else:
     assigns = dict(assigns)
   directory = os.path.dirname(filename)
-  f = open(filename, "r")
   try:
-    for line in f.xreadlines():
+    f = open(filename, "r", encoding="utf-8", errors="ignore")
+  except FileNotFoundError:
+    print("Warning: File not found:", filename)
+    return []
+  try:
+    for line in f:
       line = Substitute(assigns, line.rstrip(), filename)
       m = ASSIGN_RE.match(line)
       if m:

@@ -328,6 +328,16 @@ public class ActionHandler {
             break;
         case TWO_DOWN:
         case TWO_FINGERS_DOWN:
+            KeyboardEcho echo = KeyboardEcho.valueOf(Integer.parseInt(Options
+                    .getStringPreference(context,
+                            R.string.pref_echo_feedback_key,
+                            KeyboardEcho.CHARACTER.getValue())));
+            echo = KeyboardEcho.next(echo);
+            Options.writeStringPreference(context,
+                    R.string.pref_echo_feedback_key, echo.getValue());
+            message = context.getString(echo.resource);
+            break;
+        case DOTS_FOUR_SIX_RIGHT:
             message = context.getString(R.string.closing_keyboard);
             listener.closeKeyboard();
             break;
